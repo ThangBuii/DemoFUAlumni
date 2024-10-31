@@ -49,9 +49,9 @@ namespace ApiAngular.Controllers
 
             var responseContent = await response.Content.ReadAsStringAsync();
             var responseObject = JsonConvert.DeserializeObject<ExternalLoginResponse>(responseContent);
-
+            HttpContext.Session.SetString("SystemToken", responseObject.Token);
             var token = GenerateJwtToken(user);
-            return Ok(new { SystemToken = responseObject.Token,UserToken = token });
+            return Ok(new { SystemToken = responseObject.Token, UserToken = token, UserId = user.UserId });
         }
         public class ExternalLoginResponse
         {
@@ -92,8 +92,8 @@ namespace ApiAngular.Controllers
         {
             new Claim(JwtRegisteredClaimNames.Sub, user.Email),
             new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
-            new Claim(ClaimTypes.NameIdentifier, user.StudentNumber.ToString()),
-            new Claim("StudentNumber", user.StudentNumber.ToString())
+            new Claim(ClaimTypes.NameIdentifier, user.UserId.ToString()),
+            new Claim("UserId", user.UserId.ToString())
         };
 
             var role = user.Role == 1 ? "Admin" : (user.Role == 2 ? "Staff" : "User");

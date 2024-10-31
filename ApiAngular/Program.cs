@@ -61,7 +61,13 @@ builder.Services.AddSwaggerGen(c =>
         }
     });
 });
-
+builder.Services.AddDistributedMemoryCache();
+builder.Services.AddSession(options =>
+{
+    options.IdleTimeout = TimeSpan.FromDays(1); // Set timeout as necessary
+    options.Cookie.HttpOnly = true; // Helps mitigate XSS attacks
+    options.Cookie.IsEssential = true; // Required for session to work without consent
+});
 builder.Services.AddControllers();
 builder.Services.AddHttpClient();
 builder.Services.AddAWSService<IAmazonS3>();
@@ -87,7 +93,7 @@ if (app.Environment.IsDevelopment())
     app.UseSwagger();
     app.UseSwaggerUI();
 }
-
+app.UseSession();
 app.UseHttpsRedirection();
 app.UseRouting();
 app.UseAuthorization();
