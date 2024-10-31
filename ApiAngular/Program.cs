@@ -94,7 +94,6 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 app.UseSession();
-app.UseHttpsRedirection();
 app.UseRouting();
 app.UseAuthorization();
 

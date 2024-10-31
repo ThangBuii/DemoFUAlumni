@@ -8,6 +8,8 @@ using Microsoft.AspNetCore.DataProtection.KeyManagement;
 using System.Text.Json.Serialization;
 using Newtonsoft.Json;
 using Amazon.S3.Model;
+using ApiAngular.Models.Data;
+using Amazon.Rekognition.Model;
 
 namespace ApiAngular.Controllers
 {
@@ -17,15 +19,31 @@ namespace ApiAngular.Controllers
     {
         private readonly IAmazonDynamoDB _dynamoDbClient;
         private readonly IAmazonS3 _s3Client;
+        private readonly Fualumni_demoContext _context;
         string bucketName = "fualumni";
         private const string _tableName = "client-storeData";
 
         public string Key { get; private set; }
 
-        public NotificationController(IAmazonDynamoDB dynamoDbClient, IAmazonS3 s3Client)
+        public NotificationController(IAmazonDynamoDB dynamoDbClient, IAmazonS3 s3Client, Fualumni_demoContext context)
         {
             _dynamoDbClient = dynamoDbClient;
             _s3Client = s3Client;
+            _context = context;
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> GetByUserId(int userId)
+        {
+            var list = _context.Notifications.Where(n => n.UserId == userId).Select(n => new {
+                NotificationId = n.NotificationId,
+                UserId = n.UserId,
+                PostId = n.PostId,
+                Message = n.Message,
+                CreatedAt = n.CreatedAt
+            }).ToList();
+
+            return Ok(list);
         }
 
         [HttpGet]
