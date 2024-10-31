@@ -37,20 +37,13 @@ namespace ApiAngular.Controllers
             public IFormFile File { get; set; }
             public string Content { get; set; }
             public int UserId { get; set; }
+            public string SystemToken { get; set; }
         }
 
         [HttpPost("create-post")]
         public async Task<IActionResult> CreatePostAsync([FromForm] AddPostRequestDTO request)
         {
             var externalApiUrl = "http://fal-dev.eba-55qpmvbp.ap-southeast-1.elasticbeanstalk.com/api/detect";
-
-            // Retrieve the token from session
-            var systemToken = HttpContext.Session.GetString("SystemToken");
-
-            if (string.IsNullOrEmpty(systemToken))
-            {
-                return Unauthorized("Session has expired or token not found.");
-            }
 
             // Validate the uploaded file
             if (request.File == null || request.File.Length == 0)
@@ -97,7 +90,7 @@ namespace ApiAngular.Controllers
                 externalApiContent.Add(fileContent, "file", request.File.FileName);
 
                 // Set the Authorization header
-                externalApiRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", systemToken);
+                externalApiRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", request.SystemToken);
 
                 // Attach the content to the request
                 externalApiRequest.Content = externalApiContent;
