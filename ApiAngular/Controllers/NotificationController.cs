@@ -33,6 +33,7 @@ namespace ApiAngular.Controllers
         }
 
         [HttpGet]
+        [Route("GetByUserId")]
         public async Task<IActionResult> GetByUserId(int userId)
         {
             var list = _context.Notifications.Where(n => n.UserId == userId).Select(n => new {
