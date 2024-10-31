@@ -49,7 +49,6 @@ namespace ApiAngular.Controllers
 
             var responseContent = await response.Content.ReadAsStringAsync();
             var responseObject = JsonConvert.DeserializeObject<ExternalLoginResponse>(responseContent);
-            HttpContext.Session.SetString("SystemToken", responseObject.Token);
             var token = GenerateJwtToken(user);
             return Ok(new { SystemToken = responseObject.Token, UserToken = token, UserId = user.UserId });
         }
