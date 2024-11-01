@@ -133,6 +133,79 @@ namespace ApiAngular.Controllers
                 CreatedAt = createdAt
             });
         }
+        [HttpGet("Detail")]
+        public async Task<IActionResult> Detail(int postId)
+        {
+            var post = _context.Posts.FirstOrDefault(p => p.PostId == postId);
+            if(post == null)
+            {
+                return BadRequest();
+            }
 
+            NotificationDetailResponse ndr = new NotificationDetailResponse();
+
+            var response = await FindExactMatchByBaseFileNameAsync(post.ImageName);
+            ProcessResponse(response, ndr);
+            await GetUrlImageFromS3(ndr);
+
+            return Ok(ndr);
+        }
+
+        private async Task GetUrlImageFromS3(NotificationDetailResponse ndr)
+        {
+            var request = new GetPreSignedUrlRequest
+            {
+                BucketName = bucketName,
+                Key = Key,
+                Expires = DateTime.UtcNow.AddMinutes(30)
+            };
+            ndr.PictureUrl = await _s3Client.GetPreSignedURLAsync(request);
+        }
+
+        private async Task<ScanResponse> FindExactMatchByBaseFileNameAsync(string baseFileName)
+        {
+            var scanRequest = new ScanRequest
+            {
+                TableName = _tableName,
+                FilterExpression = "contains(FileName, :v_partialFileName)",
+                ExpressionAttributeValues = new Dictionary<string, AttributeValue>
+        {
+            { ":v_partialFileName", new AttributeValue { S = baseFileName } }
+        }
+            };
+
+            var scanResponse = await _dynamoDbClient.ScanAsync(scanRequest);
+
+           
+
+            return scanResponse;
+        }
+
+        private void ProcessResponse(ScanResponse response, NotificationDetailResponse ndr)
+        {
+            if (response.Items.Count == 1)
+            {
+                var item = response.Items[0];
+
+                if (item.TryGetValue("Data", out var dataValue))
+                {
+                    // Deserialize the Data column into the specified type
+                    var data = JsonConvert.DeserializeObject<FaceDetectionResult>(dataValue.S);
+                    ndr.ImageWidth = data.Width ?? 0;
+                    ndr.ImageHeight = data.Height ?? 0;
+                    Key = data.Key;
+                    ndr.RegisteredFaces = data.RegisteredFaces ?? new List<FaceRecognitionResponse>();
+                    ndr.UnregisteredFaces = data.UnregisteredFaces ?? new List<FaceRecognitionResponse>();
+                }
+            }
+            else if (response.Items.Count == 0)
+            {
+                throw new Exception("No item found for the given fileName.");
+            }
+            else
+            {
+                throw new Exception("Multiple items found for the given fileName. Please ensure fileName is unique.");
+            }
+        }
     }
 }
