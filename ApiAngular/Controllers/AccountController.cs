@@ -2,6 +2,7 @@
 using ApiAngular.Models.Data;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Newtonsoft.Json;
 using System.IdentityModel.Tokens.Jwt;
@@ -24,6 +25,34 @@ namespace ApiAngular.Controllers
             _context = context;
             _httpClient = httpClient;
         }
+
+        [HttpGet("SearchByUserName")]
+        public async Task<IActionResult> SearchByUserName(string userName)
+        {
+            if (string.IsNullOrWhiteSpace(userName))
+            {
+                return BadRequest("User name cannot be empty.");
+            }
+
+            // Convert the search parameter to lowercase
+            var lowerUserName = userName.ToLower();
+
+            // Assuming _context is your database context and Users is your DbSet
+            var users = await _context.Users
+                .Where(u => u.UserName.ToLower().Contains(lowerUserName)).Select(u => new
+                {
+                    UserName = u.UserName,
+                })
+                .ToListAsync();
+
+            if (users == null || !users.Any())
+            {
+                return NotFound("No users found with the specified username.");
+            }
+
+            return Ok(users);
+        }
+
         [HttpPost("Login")]
         public async Task<IActionResult> Login(LoginRequestDTO request)
         {
